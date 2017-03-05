@@ -1,9 +1,6 @@
 package evolv.io;
 
 class NameGenerator {
-	/**
-	 * 
-	 */
 	private final EvolvioColor evolvioColor;
 
 	/**
@@ -13,8 +10,8 @@ class NameGenerator {
 		this.evolvioColor = evolvioColor;
 	}
 
-	final int MIN_NAME_LENGTH = 3;
-	final int MAX_NAME_LENGTH = 10;
+	final int MIN_NAME_LENGTH = Configuration.MINIMUM_NAME_LENGTH;
+	final int MAX_NAME_LENGTH = Configuration.MAXIMUM_NAME_LENGTH;
 	final float[] LETTER_FREQUENCIES = { 8.167f, 1.492f, 2.782f, 4.253f, 12.702f, 2.228f, 2.015f, 6.094f, 6.966f,
 			0.153f, 0.772f, 4.025f, 2.406f, 6.749f, 7.507f, 1.929f, 0.095f, 5.987f, 6.327f, 9.056f, 2.758f, 0.978f,
 			2.361f, 0.150f, 1.974f, 0.074f };
@@ -43,8 +40,7 @@ class NameGenerator {
 			}
 		}
 		int changeIndex = (int) this.evolvioColor.random(0, input.length());
-		input = input.substring(0, changeIndex) + getRandomChar()
-				+ input.substring(changeIndex + 1, input.length());
+		input = input.substring(0, changeIndex) + getRandomChar() + input.substring(changeIndex + 1, input.length());
 		return input;
 	}
 
