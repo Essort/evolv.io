@@ -1,39 +1,40 @@
 package evolv.io;
 
-import processing.core.*;
-import processing.event.*;
+import processing.core.PApplet;
+import processing.core.PFont;
+import processing.event.MouseEvent;
 
 public class EvolvioColor extends PApplet {
 
-	Board evoBoard;
-	final int SEED = parseInt(random(1000000));
-	final float NOISE_STEP_SIZE = 0.1f;
-	final int BOARD_WIDTH = 100;
-	final int BOARD_HEIGHT = 100;
+	private static final String INITIAL_FILE_NAME = "PIC";
+	private static final float NOISE_STEP_SIZE = 0.1f;
+	private static final int BOARD_WIDTH = 100;
+	private static final int BOARD_HEIGHT = 100;
+	private static final float SCALE_TO_FIX_BUG = 100;
+	private static final double TIME_STEP = 0.001f;
+	private static final float MIN_TEMPERATURE = -0.5f;
+	private static final float MAX_TEMPERATURE = 1.0f;
+	private static final int ROCKS_TO_ADD = 0;
+	private static final int CREATURE_MINIMUM = 60;
 
-	final float SCALE_TO_FIX_BUG = 100;
+	final int seed = parseInt(random(1000000));
 
-	final double TIME_STEP = 0.001f;
-	final float MIN_TEMPERATURE = -0.5f;
-	final float MAX_TEMPERATURE = 1.0f;
+	private Board evoBoard;
+	private float scaleFactor;
+	private int windowWidth;
+	private int windowHeight;
+	private float cameraX = BOARD_WIDTH * 0.5f;
+	private float cameraY = BOARD_HEIGHT * 0.5f;
+	private float cameraR;
+	private float zoom = 1;
+	// TODO make dragging into an enum
+	// 0 = no drag, 1 = drag screen, 2 and 3 are dragging temp extremes.
+	private int dragging = 0;
+	private float prevMouseX;
+	private float prevMouseY;
+	private boolean draggedFar;
 
-	final int ROCKS_TO_ADD = 0;
-	final int CREATURE_MINIMUM = 60;
-
-	float scaleFactor;
-	int windowWidth;
-	int windowHeight;
-	float cameraX = BOARD_WIDTH * 0.5f;
-	float cameraY = BOARD_HEIGHT * 0.5f;
-	float cameraR = 0;
-	float zoom = 1;
 	PFont font;
-	int dragging = 0; // 0 = no drag, 1 = drag screen, 2 and 3 are dragging temp
-						// extremes.
-	float prevMouseX;
-	float prevMouseY;
-	boolean draggedFar = false;
-	final String INITIAL_FILE_NAME = "PIC";
 
 	public static void main(String[] passedArgs) {
 		String[] appletArgs = new String[] { "evolv.io.EvolvioColor" };
@@ -63,8 +64,8 @@ public class EvolvioColor extends PApplet {
 		surface.setResizable(true);
 		colorMode(HSB, 1.0f);
 		font = loadFont("Jygquip1-48.vlw");
-		evoBoard = new Board(this, BOARD_WIDTH, BOARD_HEIGHT, NOISE_STEP_SIZE, MIN_TEMPERATURE, MAX_TEMPERATURE, ROCKS_TO_ADD,
-				CREATURE_MINIMUM, SEED, INITIAL_FILE_NAME, TIME_STEP);
+		evoBoard = new Board(this, BOARD_WIDTH, BOARD_HEIGHT, NOISE_STEP_SIZE, MIN_TEMPERATURE, MAX_TEMPERATURE,
+				ROCKS_TO_ADD, CREATURE_MINIMUM, seed, INITIAL_FILE_NAME, TIME_STEP);
 		resetZoom();
 	}
 
@@ -148,17 +149,8 @@ public class EvolvioColor extends PApplet {
 				float x = (mouseX - (windowHeight + 10));
 				float y = (mouseY - 570);
 				boolean clickedOnLeft = (x % 230 < 110);
-				if (x >= 0 && x < 460 && y >= 0 && y < 200 && x % 230 < 220 && y % 50 < 40) { // 460
-																								// =
-																								// 2
-																								// *
-																								// 230
-																								// and
-																								// 200
-																								// =
-																								// 4
-																								// *
-																								// 50
+				if (x >= 0 && x < 460 && y >= 0 && y < 200 && x % 230 < 220 && y % 50 < 40) {
+					// 460 = 2 * 230 and 200 = 4 * 50
 					int mX = (int) (x / 230);
 					int mY = (int) (y / 50);
 					int buttonNum = mX + mY * 2;
@@ -171,9 +163,9 @@ public class EvolvioColor extends PApplet {
 
 					case (1):
 						if (clickedOnLeft) {
-							evoBoard.creatureMinimum -= evoBoard.creatureMinimumIncrement;
+							evoBoard.creatureMinimum -= Board.CREATURE_MINIMUM_INCREMENT;
 						} else {
-							evoBoard.creatureMinimum += evoBoard.creatureMinimumIncrement;
+							evoBoard.creatureMinimum += Board.CREATURE_MINIMUM_INCREMENT;
 						}
 						break;
 
@@ -230,7 +222,7 @@ public class EvolvioColor extends PApplet {
 				}
 			} else if (mouseX >= height + 10 && mouseX < width - 50 && evoBoard.selectedCreature == null) {
 				int listIndex = (mouseY - 150) / 70;
-				if (listIndex >= 0 && listIndex < evoBoard.LIST_SLOTS) {
+				if (listIndex >= 0 && listIndex < Board.LIST_SLOTS) {
 					evoBoard.selectedCreature = evoBoard.list[listIndex];
 					cameraX = (float) evoBoard.selectedCreature.px;
 					cameraY = (float) evoBoard.selectedCreature.py;
@@ -265,7 +257,7 @@ public class EvolvioColor extends PApplet {
 				cameraR = 0;
 				if (x >= 0 && x < BOARD_WIDTH && y >= 0 && y < BOARD_HEIGHT) {
 					for (int i = 0; i < evoBoard.softBodiesInPositions[x][y].size(); i++) {
-						SoftBody body = (SoftBody) evoBoard.softBodiesInPositions[x][y].get(i);
+						SoftBody body = evoBoard.softBodiesInPositions[x][y].get(i);
 						if (body.isCreature) {
 							float distance = dist(mX, mY, (float) body.px, (float) body.py);
 							if (distance <= body.getRadius()) {

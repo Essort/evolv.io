@@ -10,24 +10,22 @@ class Brain {
 	 */
 	private final EvolvioColor evolvioColor;
 	// Brain
-	final int MEMORY_COUNT = 1;
-	final int BRAIN_WIDTH = 3;
-	final int BRAIN_HEIGHT = 11 + MEMORY_COUNT + 1;
-	final double AXON_START_MUTABILITY = 0.0005f;
-	final double STARTING_AXON_VARIABILITY = 1.0f;
-	Axon[][][] axons;
-	double[][] neurons;
-
+	private final int MEMORY_COUNT = 1;
+	private final int BRAIN_WIDTH = 3;
+	private final int BRAIN_HEIGHT = 11 + MEMORY_COUNT + 1;
+	private final double AXON_START_MUTABILITY = 0.0005f;
+	private final double STARTING_AXON_VARIABILITY = 1.0f;
+	private final Axon[][][] axons;
+	private final double[][] neurons;
 	// labels
-	String[] inputLabels = new String[BRAIN_HEIGHT];
-	String[] outputLabels = new String[BRAIN_HEIGHT];
+	private final String[] inputLabels = new String[BRAIN_HEIGHT];
+	private final String[] outputLabels = new String[BRAIN_HEIGHT];
 
 	public Brain(EvolvioColor evolvioColor, Axon[][][] tbrain, double[][] tneurons) {
 		this.evolvioColor = evolvioColor;
 		// initialize brain
 		if (tbrain == null) {
 			axons = new Axon[BRAIN_WIDTH - 1][BRAIN_HEIGHT][BRAIN_HEIGHT - 1];
-			neurons = new double[BRAIN_WIDTH][BRAIN_HEIGHT];
 			for (int x = 0; x < BRAIN_WIDTH - 1; x++) {
 				for (int y = 0; y < BRAIN_HEIGHT; y++) {
 					for (int z = 0; z < BRAIN_HEIGHT - 1; z++) {
@@ -52,8 +50,7 @@ class Brain {
 		}
 
 		// initialize labels
-		String[] baseInput = { "0Hue", "0Sat", "0Bri", "1Hue", "1Sat", "1Bri", "2Hue", "2Sat", "2Bri", "Size",
-				"MHue" };
+		String[] baseInput = { "0Hue", "0Sat", "0Bri", "1Hue", "1Sat", "1Bri", "2Hue", "2Sat", "2Bri", "Size", "MHue" };
 		String[] baseOutput = { "BHue", "Accel.", "Turn", "Eat", "Fight", "Birth", "How funny?", "How popular?",
 				"How generous?", "How smart?", "MHue" };
 		for (int i = 0; i < 11; i++) {
@@ -78,8 +75,8 @@ class Brain {
 		for (int x = 0; x < BRAIN_WIDTH - 1; x++) {
 			for (int y = 0; y < BRAIN_HEIGHT; y++) {
 				for (int z = 0; z < BRAIN_HEIGHT - 1; z++) {
-					float axonAngle = EvolvioColor.atan2((y + z) / 2.0f - BRAIN_HEIGHT / 2.0f, x - BRAIN_WIDTH / 2) / (2 * EvolvioColor.PI)
-							+ EvolvioColor.PI;
+					float axonAngle = EvolvioColor.atan2((y + z) / 2.0f - BRAIN_HEIGHT / 2.0f, x - BRAIN_WIDTH / 2)
+							/ (2 * EvolvioColor.PI) + EvolvioColor.PI;
 					Brain parentForAxon = parents
 							.get((int) (((axonAngle + randomParentRotation) % 1.0f) * parentsTotal)).brain;
 					newBrain[x][y][z] = parentForAxon.axons[x][y][z].mutateAxon();
@@ -88,7 +85,8 @@ class Brain {
 		}
 		for (int x = 0; x < BRAIN_WIDTH; x++) {
 			for (int y = 0; y < BRAIN_HEIGHT; y++) {
-				float axonAngle = EvolvioColor.atan2(y - BRAIN_HEIGHT / 2.0f, x - BRAIN_WIDTH / 2) / (2 * EvolvioColor.PI) + EvolvioColor.PI;
+				float axonAngle = EvolvioColor.atan2(y - BRAIN_HEIGHT / 2.0f, x - BRAIN_WIDTH / 2)
+						/ (2 * EvolvioColor.PI) + EvolvioColor.PI;
 				Brain parentForAxon = parents
 						.get((int) (((axonAngle + randomParentRotation) % 1.0f) * parentsTotal)).brain;
 				newNeurons[x][y] = parentForAxon.neurons[x][y];
@@ -101,8 +99,8 @@ class Brain {
 		final float neuronSize = 0.4f;
 		this.evolvioColor.noStroke();
 		this.evolvioColor.fill(0, 0, 0.4f);
-		this.evolvioColor.rect((-1.7f - neuronSize) * scaleUp, -neuronSize * scaleUp, (2.4f + BRAIN_WIDTH + neuronSize * 2) * scaleUp,
-				(BRAIN_HEIGHT + neuronSize * 2) * scaleUp);
+		this.evolvioColor.rect((-1.7f - neuronSize) * scaleUp, -neuronSize * scaleUp,
+				(2.4f + BRAIN_WIDTH + neuronSize * 2) * scaleUp, (BRAIN_HEIGHT + neuronSize * 2) * scaleUp);
 
 		this.evolvioColor.ellipseMode(EvolvioColor.RADIUS);
 		this.evolvioColor.strokeWeight(2);
@@ -123,7 +121,8 @@ class Brain {
 				this.evolvioColor.fill(neuronFillColor(val));
 				this.evolvioColor.ellipse(x * scaleUp, y * scaleUp, neuronSize * scaleUp, neuronSize * scaleUp);
 				this.evolvioColor.fill(neuronTextColor(val));
-				this.evolvioColor.text(EvolvioColor.nf((float) val, 0, 1), x * scaleUp, (y + (neuronSize * 0.6f)) * scaleUp);
+				this.evolvioColor.text(EvolvioColor.nf((float) val, 0, 1), x * scaleUp,
+						(y + (neuronSize * 0.6f)) * scaleUp);
 			}
 		}
 		if (mX >= 0 && mX < BRAIN_WIDTH && mY >= 0 && mY < BRAIN_HEIGHT) {

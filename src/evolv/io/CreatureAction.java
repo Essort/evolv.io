@@ -61,14 +61,14 @@ public interface CreatureAction {
 			if (modifier <= 0) {
 				return; // This creature doesn't want to reproduce
 			}
-			if (creature.board.year - creature.birthTime < creature.MATURE_AGE) {
+			if (creature.board.year - creature.birthTime < Creature.MATURE_AGE) {
 				return; // This creature is too young
 			}
-			if (creature.energy <= creature.SAFE_SIZE) {
+			if (creature.energy <= Creature.SAFE_SIZE) {
 				return; // This creature is too small
 			}
 
-			double babySize = creature.SAFE_SIZE;
+			double babySize = Creature.SAFE_SIZE;
 			creature.reproduce(babySize, timeStep);
 		}
 	}

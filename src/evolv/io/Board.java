@@ -5,78 +5,74 @@ import java.util.ArrayList;
 import processing.core.PFont;
 
 class Board {
-	/**
-	 * 
-	 */
+	private static final double MANUAL_BIRTH_SIZE = 1.2f;
+	private static final float OBJECT_TIMESTEPS_PER_YEAR = 100;
+	private static final int POPULATION_HISTORY_LENGTH = 200;
+	private static final double RECORD_POPULATION_EVERY = 0.02f;
+	private static final float THERMOMETER_MIN = -2;
+	private static final float THERMOMETER_MAX = 2;
+	private static final float MIN_ROCK_ENERGY_BASE = 0.8f;
+	private static final float MAX_ROCK_ENERGY_BASE = 1.6f;
+	private static final float ROCK_DENSITY = 5;
+	private static final double FLASH_SPEED = 80;
+	private static final String[] SORTS = { "Biggest", "Smallest", "Youngest", "Oldest", "A to Z", "Z to A",
+			"Highest Gen", "Lowest Gen" };
+
+	static final float MIN_CREATURE_ENERGY = 1.2f;
+	static final float MAX_CREATURE_ENERGY = 2.0f;
+	static final float MINIMUM_SURVIVABLE_SIZE = 0.06f;
+	static final float CREATURE_STROKE_WEIGHT = 0.6f;
+	static final int LIST_SLOTS = 6;
+	static final int CREATURE_MINIMUM_INCREMENT = 5;
+	// Maximum zoom to draw
+	static final double MAX_DETAILED_ZOOM = 3.5f;
+
 	private final EvolvioColor evolvioColor;
+	private final double timeStep;
+	private final int[] populationHistory;
+	// Rocks
+	private final int rocksToAdd;
+	private final int rockColor;
+	private final ArrayList<SoftBody> rocks;
+	private final int[] fileSaveCounts;
+	private final double[] fileSaveTimes;
+	private final int buttonColor;
+	private final String folder;
+
 	// Board
-	int boardWidth;
-	int boardHeight;
-	Tile[][] tiles;
+	final int boardWidth;
+	final int boardHeight;
+	final Tile[][] tiles;
+	final ArrayList<SoftBody>[][] softBodiesInPositions;
+	final ArrayList<Creature> creatures;
+	final Creature[] list = new Creature[LIST_SLOTS];
+	final int backgroundColor;
+
+	private int creatureRankMetric;
+	private boolean wasPressingB;
+	// Temperature
+	private float minTemperature;
+	private float maxTemperature;
+	private double temperature;
 
 	// Creature
 	int creatureMinimum;
-	final float MIN_CREATURE_ENERGY = 1.2f;
-	final float MAX_CREATURE_ENERGY = 2.0f;
-	final float MINIMUM_SURVIVABLE_SIZE = 0.06f;
-	final float CREATURE_STROKE_WEIGHT = 0.6f;
-	ArrayList[][] softBodiesInPositions;
-	ArrayList<Creature> creatures;
-	Creature selectedCreature = null;
-	int creatureIDUpTo = 0;
-	private int creatureRankMetric = 0;
-	final int LIST_SLOTS = 6;
-	Creature[] list = new Creature[LIST_SLOTS];
-	final int creatureMinimumIncrement = 5;
-	double MANUAL_BIRTH_SIZE = 1.2f;
-	boolean wasPressingB = false;
-
+	Creature selectedCreature;
+	int creatureIDUpTo;
 	// Time or History
-	double year = 0;
-	final float OBJECT_TIMESTEPS_PER_YEAR = 100;
-	double timeStep;
-	int POPULATION_HISTORY_LENGTH = 200;
-	int[] populationHistory;
-	double recordPopulationEvery = 0.02f;
+	double year;
 	int playSpeed = 1;
 
-	// Temperature
-	float MIN_TEMPERATURE;
-	float MAX_TEMPERATURE;
-	final float THERMOMETER_MIN = -2;
-	final float THERMOMETER_MAX = 2;
-	double temperature;
-
-	// Rocks
-	final int ROCKS_TO_ADD;
-	final float MIN_ROCK_ENERGY_BASE = 0.8f;
-	final float MAX_ROCK_ENERGY_BASE = 1.6f;
-	final float ROCK_DENSITY = 5;
-	final int ROCK_COLOR;
-	ArrayList<SoftBody> rocks;
-
 	// Saving
-	int[] fileSaveCounts;
-	double[] fileSaveTimes;
 	double imageSaveInterval = 1;
 	double textSaveInterval = 1;
 
-	// Misc or Unsorted
-	final int BACKGROUND_COLOR;
-	final static double MAX_DETAILED_ZOOM = 3.5f; // Maximum zoom to draw
-													// details at
-	int buttonColor;
-	String folder = "TEST";
-	final double FLASH_SPEED = 80;
 	boolean userControl;
-
-	final String[] sorts = { "Biggest", "Smallest", "Youngest", "Oldest", "A to Z", "Z to A", "Highest Gen",
-			"Lowest Gen" };
 
 	public Board(EvolvioColor evolvioColor, int w, int h, float stepSize, float min, float max, int rta, int cm,
 			int SEED, String INITIAL_FILE_NAME, double ts) {
-		ROCK_COLOR = evolvioColor.color(0, 0, 0.5f);
-		BACKGROUND_COLOR = evolvioColor.color(0, 0, 0.1f);
+		rockColor = evolvioColor.color(0, 0, 0.5f);
+		backgroundColor = evolvioColor.color(0, 0, 0.1f);
 		buttonColor = evolvioColor.color(0.82f, 0.8f, 0.7f);
 		this.evolvioColor = evolvioColor;
 		this.evolvioColor.noiseSeed(SEED);
@@ -95,8 +91,8 @@ class Board {
 				tiles[x][y] = new Tile(this.evolvioColor, x, y, fertility, climateType, this);
 			}
 		}
-		MIN_TEMPERATURE = min;
-		MAX_TEMPERATURE = max;
+		minTemperature = min;
+		maxTemperature = max;
 
 		softBodiesInPositions = new ArrayList[boardWidth][boardHeight];
 		for (int x = 0; x < boardWidth; x++) {
@@ -105,13 +101,13 @@ class Board {
 			}
 		}
 
-		ROCKS_TO_ADD = rta;
+		rocksToAdd = rta;
 		rocks = new ArrayList<SoftBody>(0);
-		for (int i = 0; i < ROCKS_TO_ADD; i++) {
+		for (int i = 0; i < rocksToAdd; i++) {
 			rocks.add(new SoftBody(this.evolvioColor, this.evolvioColor.random(0, boardWidth),
 					this.evolvioColor.random(0, boardHeight), 0, 0, getRandomSize(), ROCK_DENSITY,
-					this.evolvioColor.hue(ROCK_COLOR), this.evolvioColor.saturation(ROCK_COLOR),
-					this.evolvioColor.brightness(ROCK_COLOR), this));
+					this.evolvioColor.hue(rockColor), this.evolvioColor.saturation(rockColor),
+					this.evolvioColor.brightness(rockColor), this));
 		}
 
 		creatureMinimum = cm;
@@ -150,7 +146,7 @@ class Board {
 	}
 
 	public void drawBlankBoard(float scaleUp) {
-		this.evolvioColor.fill(BACKGROUND_COLOR);
+		this.evolvioColor.fill(backgroundColor);
 		this.evolvioColor.rect(0, 0, scaleUp * boardWidth, scaleUp * boardHeight);
 	}
 
@@ -173,7 +169,7 @@ class Board {
 		this.evolvioColor.textFont(font, 24);
 		this.evolvioColor.text("Population: " + creatures.size(), 10, 80);
 		String[] seasons = { "Winter", "Spring", "Summer", "Autumn" };
-		this.evolvioColor.text(seasons[(int) (getSeason() * 4)] + "\nSeed: " + this.evolvioColor.SEED, seasonTextXCoor,
+		this.evolvioColor.text(seasons[(int) (getSeason() * 4)] + "\nSeed: " + this.evolvioColor.seed, seasonTextXCoor,
 				30);
 
 		if (selectedCreature == null) {
@@ -242,7 +238,7 @@ class Board {
 			this.evolvioColor.fill(0, 0, 1);
 			this.evolvioColor.textAlign(EvolvioColor.CENTER);
 			this.evolvioColor.text("Reset zoom", 120, 123);
-			this.evolvioColor.text("Sort by: " + sorts[creatureRankMetric], 350, 123);
+			this.evolvioColor.text("Sort by: " + SORTS[creatureRankMetric], 350, 123);
 
 			this.evolvioColor.textFont(font, 19);
 			String[] buttonTexts = { "Brain Control", "Maintain pop. at " + creatureMinimum, "Screenshot now",
@@ -268,7 +264,7 @@ class Board {
 				if (i == 0) {
 				} else if (i == 1) {
 					this.evolvioColor.text(
-							"-" + creatureMinimumIncrement + "                    +" + creatureMinimumIncrement,
+							"-" + CREATURE_MINIMUM_INCREMENT + "                    +" + CREATURE_MINIMUM_INCREMENT,
 							x + 110, y + 37);
 				} else if (i <= 5) {
 					this.evolvioColor.text(getNextFileName(i - 2), x + 110, y + 37);
@@ -370,7 +366,7 @@ class Board {
 	public void iterate(double timeStep) {
 		double prevYear = year;
 		year += timeStep;
-		if (Math.floor(year / recordPopulationEvery) != Math.floor(prevYear / recordPopulationEvery)) {
+		if (Math.floor(year / RECORD_POPULATION_EVERY) != Math.floor(prevYear / RECORD_POPULATION_EVERY)) {
 			for (int i = POPULATION_HISTORY_LENGTH - 1; i >= 1; i--) {
 				populationHistory[i] = populationHistory[i - 1];
 			}
@@ -467,13 +463,13 @@ class Board {
 	}
 
 	private double getGrowthRate(double theTime) {
-		double temperatureRange = MAX_TEMPERATURE - MIN_TEMPERATURE;
-		return MIN_TEMPERATURE + temperatureRange * 0.5f - temperatureRange * 0.5f * Math.cos(theTime * 2 * Math.PI);
+		double temperatureRange = maxTemperature - minTemperature;
+		return minTemperature + temperatureRange * 0.5f - temperatureRange * 0.5f * Math.cos(theTime * 2 * Math.PI);
 	}
 
 	double getGrowthOverTimeRange(double startTime, double endTime) {
-		double temperatureRange = MAX_TEMPERATURE - MIN_TEMPERATURE;
-		double m = MIN_TEMPERATURE + temperatureRange * 0.5f;
+		double temperatureRange = maxTemperature - minTemperature;
+		double m = minTemperature + temperatureRange * 0.5f;
 		return (endTime - startTime) * m + (temperatureRange / Math.PI / 4.0f)
 				* (Math.sin(2 * Math.PI * startTime) - Math.sin(2 * Math.PI * endTime));
 	}
@@ -497,8 +493,8 @@ class Board {
 		this.evolvioColor.stroke(0, 0, 1);
 		this.evolvioColor.strokeWeight(3);
 		this.evolvioColor.line(x1, (float) (zeroLineY), x1 + w, (float) (zeroLineY));
-		double minY = y1 + h * (1 - (MIN_TEMPERATURE - min) / (max - min));
-		double maxY = y1 + h * (1 - (MAX_TEMPERATURE - min) / (max - min));
+		double minY = y1 + h * (1 - (minTemperature - min) / (max - min));
+		double maxY = y1 + h * (1 - (maxTemperature - min) / (max - min));
 		this.evolvioColor.fill(0, 0, 0.8f);
 		this.evolvioColor.line(x1, (float) (minY), x1 + w * 1.8f, (float) (minY));
 		this.evolvioColor.line(x1, (float) (maxY), x1 + w * 1.8f, (float) (maxY));
@@ -506,8 +502,8 @@ class Board {
 
 		this.evolvioColor.fill(0, 0, 1);
 		this.evolvioColor.text("Zero", x1 - 5, (float) (zeroLineY + 8));
-		this.evolvioColor.text(EvolvioColor.nf(MIN_TEMPERATURE, 0, 2), x1 - 5, (float) (minY + 8));
-		this.evolvioColor.text(EvolvioColor.nf(MAX_TEMPERATURE, 0, 2), x1 - 5, (float) (maxY + 8));
+		this.evolvioColor.text(EvolvioColor.nf(minTemperature, 0, 2), x1 - 5, (float) (minY + 8));
+		this.evolvioColor.text(EvolvioColor.nf(maxTemperature, 0, 2), x1 - 5, (float) (maxY + 8));
 	}
 
 	private void drawVerticalSlider(float x1, float y1, float w, float h, double prog, int fillColor, int antiColor) {
@@ -523,22 +519,22 @@ class Board {
 	}
 
 	boolean setMinTemperature(float temp) {
-		MIN_TEMPERATURE = tempBounds(THERMOMETER_MIN + temp * (THERMOMETER_MAX - THERMOMETER_MIN));
-		if (MIN_TEMPERATURE > MAX_TEMPERATURE) {
-			float placeHolder = MAX_TEMPERATURE;
-			MAX_TEMPERATURE = MIN_TEMPERATURE;
-			MIN_TEMPERATURE = placeHolder;
+		minTemperature = tempBounds(THERMOMETER_MIN + temp * (THERMOMETER_MAX - THERMOMETER_MIN));
+		if (minTemperature > maxTemperature) {
+			float placeHolder = maxTemperature;
+			maxTemperature = minTemperature;
+			minTemperature = placeHolder;
 			return true;
 		}
 		return false;
 	}
 
 	boolean setMaxTemperature(float temp) {
-		MAX_TEMPERATURE = tempBounds(THERMOMETER_MIN + temp * (THERMOMETER_MAX - THERMOMETER_MIN));
-		if (MIN_TEMPERATURE > MAX_TEMPERATURE) {
-			float placeHolder = MAX_TEMPERATURE;
-			MAX_TEMPERATURE = MIN_TEMPERATURE;
-			MIN_TEMPERATURE = placeHolder;
+		maxTemperature = tempBounds(THERMOMETER_MIN + temp * (THERMOMETER_MAX - THERMOMETER_MIN));
+		if (minTemperature > maxTemperature) {
+			float placeHolder = maxTemperature;
+			maxTemperature = minTemperature;
+			minTemperature = placeHolder;
 			return true;
 		}
 		return false;
@@ -549,11 +545,11 @@ class Board {
 	}
 
 	float getHighTempProportion() {
-		return (MAX_TEMPERATURE - THERMOMETER_MIN) / (THERMOMETER_MAX - THERMOMETER_MIN);
+		return (maxTemperature - THERMOMETER_MIN) / (THERMOMETER_MAX - THERMOMETER_MIN);
 	}
 
 	float getLowTempProportion() {
-		return (MIN_TEMPERATURE - THERMOMETER_MIN) / (THERMOMETER_MAX - THERMOMETER_MIN);
+		return (minTemperature - THERMOMETER_MIN) / (THERMOMETER_MAX - THERMOMETER_MIN);
 	}
 
 	private String toDate(double d) {
@@ -568,8 +564,8 @@ class Board {
 		while (creatures.size() < creatureMinimum) {
 			if (choosePreexisting) {
 				Creature c = getRandomCreature();
-				c.addEnergy(c.SAFE_SIZE);
-				c.reproduce(c.SAFE_SIZE, timeStep);
+				c.addEnergy(Creature.SAFE_SIZE);
+				c.reproduce(Creature.SAFE_SIZE, timeStep);
 			} else {
 				creatures.add(new Creature(this.evolvioColor, this));
 			}
@@ -614,13 +610,11 @@ class Board {
 	}
 
 	public void incrementSort() {
-		this.evolvioColor.evoBoard.creatureRankMetric = (this.evolvioColor.evoBoard.creatureRankMetric + 1)
-				% sorts.length;
+		this.creatureRankMetric = (this.creatureRankMetric + 1) % SORTS.length;
 	}
 
 	public void decrementSort() {
-		this.evolvioColor.evoBoard.creatureRankMetric = (this.evolvioColor.evoBoard.creatureRankMetric + sorts.length
-				- 1) % sorts.length;
+		this.creatureRankMetric = (this.creatureRankMetric + SORTS.length - 1) % SORTS.length;
 	}
 
 	public String[] toBigString() { // Convert current evolvio board into

@@ -1,29 +1,30 @@
 package evolv.io;
 
 class Axon {
-	final double MUTABILITY_MUTABILITY = 0.7f;
-	final int mutatePower = 9;
-	final double MUTATE_MULTI;
+	private static final double MUTABILITY_MUTABILITY = 0.7f;
+	private static final int MUTATE_POWER = 9;
 
-	double weight;
-	double mutability;
+	private final double mutability;
+	private final double mutateMulti;
+
+	final double weight;
 
 	public Axon(double w, double m) {
 		weight = w;
 		mutability = m;
-		MUTATE_MULTI = Math.pow(0.5f, mutatePower);
+		mutateMulti = Math.pow(0.5f, MUTATE_POWER);
 	}
 
 	public Axon mutateAxon() {
 		double mutabilityMutate = Math.pow(0.5f, pmRan() * MUTABILITY_MUTABILITY);
-		return new Axon(weight + r() * mutability / MUTATE_MULTI, mutability * mutabilityMutate);
+		return new Axon(weight + r() * mutability / mutateMulti, mutability * mutabilityMutate);
 	}
 
-	public double r() {
-		return Math.pow(pmRan(), mutatePower);
+	private static double r() {
+		return Math.pow(pmRan(), MUTATE_POWER);
 	}
 
-	public double pmRan() {
+	private static double pmRan() {
 		return Math.random() * 2 - 1;
 	}
 }

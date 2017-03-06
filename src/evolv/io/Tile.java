@@ -1,27 +1,25 @@
 package evolv.io;
 
 class Tile {
-	/**
-	 * 
-	 */
+	private static final float FOOD_GROWTH_RATE = 1.0f;
+	private static final float MAX_GROWTH_LEVEL = 3.0f;
+
 	private final EvolvioColor evolvioColor;
-	public final int barrenColor;
-	public final int fertileColor;
-	public final int blackColor;
-	public final int waterColor;
-	public final float FOOD_GROWTH_RATE = 1.0f;
+	private final int barrenColor;
+	private final int fertileColor;
+	private final int blackColor;
+	private final int waterColor;
+	private final int posX;
+	private final int posY;
+	private final double climateType;
+	private final Board board;
+
+	final double foodType;
+
+	private double lastUpdateTime;
 
 	double fertility;
 	double foodLevel;
-	private final float maxGrowthLevel = 3.0f;
-	private int posX;
-	private int posY;
-	private double lastUpdateTime = 0;
-
-	public double climateType;
-	public double foodType;
-
-	Board board;
 
 	public Tile(EvolvioColor evolvioColor, int x, int y, double f, float type, Board b) {
 		barrenColor = evolvioColor.color(0, 0, 1);
@@ -85,10 +83,10 @@ class Tile {
 			} else {
 				if (growthChange > 0) { // Food is growing. Exponentially
 										// approach maxGrowthLevel.
-					if (foodLevel < maxGrowthLevel) {
-						double newDistToMax = (maxGrowthLevel - foodLevel)
+					if (foodLevel < MAX_GROWTH_LEVEL) {
+						double newDistToMax = (MAX_GROWTH_LEVEL - foodLevel)
 								* Math.pow(2.71828182846f, -growthChange * fertility * FOOD_GROWTH_RATE);
-						double foodGrowthAmount = (maxGrowthLevel - newDistToMax) - foodLevel;
+						double foodGrowthAmount = (MAX_GROWTH_LEVEL - newDistToMax) - foodLevel;
 						addFood(foodGrowthAmount, climateType, false);
 					}
 				} else { // Food is dying off. Exponentially approach 0.
@@ -133,11 +131,11 @@ class Tile {
 		int foodColor = this.evolvioColor.color((float) (foodType), 1, 1);
 		if (fertility > 1) {
 			return waterColor;
-		} else if (foodLevel < maxGrowthLevel) {
+		} else if (foodLevel < MAX_GROWTH_LEVEL) {
 			return interColorFixedHue(interColor(barrenColor, fertileColor, fertility), foodColor,
-					foodLevel / maxGrowthLevel, this.evolvioColor.hue(foodColor));
+					foodLevel / MAX_GROWTH_LEVEL, this.evolvioColor.hue(foodColor));
 		} else {
-			return interColorFixedHue(foodColor, blackColor, 1.0f - maxGrowthLevel / foodLevel,
+			return interColorFixedHue(foodColor, blackColor, 1.0f - MAX_GROWTH_LEVEL / foodLevel,
 					this.evolvioColor.hue(foodColor));
 		}
 	}

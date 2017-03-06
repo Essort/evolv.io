@@ -7,74 +7,63 @@ import java.util.List;
 import processing.core.PFont;
 
 class Creature extends SoftBody {
-	/**
-	 * 
-	 */
-	private final EvolvioColor evolvioColor;
 	// Energy
-	double ACCELERATION_ENERGY = 0.18f;
-	double ACCELERATION_BACK_ENERGY = 0.24f;
-	double SWIM_ENERGY = 0.008f;
-	double TURN_ENERGY = 0.06f;
-	double EAT_ENERGY = 0.05f;
-	double EAT_SPEED = 0.5f; // 1 is instant, 0 is nonexistent, 0.001 is
-								// verrry slow.
-	double EAT_WHILE_MOVING_INEFFICIENCY_MULTIPLIER = 2.0f; // The bigger
-															// this number
-															// is, the less
-															// effiently
-															// creatures eat
-															// when they're
-															// moving.
-	double FIGHT_ENERGY = 0.06f;
-	double INJURED_ENERGY = 0.25f;
-	double METABOLISM_ENERGY = 0.004f;
-	double AGE_FACTOR = 1; // 0 no ageing
-	double currentEnergy;
-	final int ENERGY_HISTORY_LENGTH = 6;
-	double[] previousEnergy = new double[ENERGY_HISTORY_LENGTH];
-
-	// Family
-	String name;
-	String parents;
-	int gen;
-	int id;
-
-	// Vision or View or Preference
-	double MAX_VISION_DISTANCE = 10;
-	final double FOOD_SENSITIVITY = 0.3f;
-	double[] visionAngles = { 0, -0.4f, 0.4f };
-	double[] visionDistances = { 0, 0.7f, 0.7f };
-	// double visionAngle;
-	// double visionDistance;
-	double[] visionOccludedX = new double[visionAngles.length];
-	double[] visionOccludedY = new double[visionAngles.length];
-	double visionResults[] = new double[9];
-
-	Brain brain;
-	final float BRIGHTNESS_THRESHOLD = 0.7f;
-
-	// Misc or Unsorted
-	float preferredRank = 8;
-	float CROSS_SIZE = 0.022f;
-	double mouthHue;
-	double vr = 0;
-	double rotation = 0;
-	final double SAFE_SIZE = 1.25f;
-	final double MATURE_AGE = 0.01f;
-
-	NameGenerator nameGenerator;
-
-	private static List<CreatureAction> CreatureActions = Arrays.asList(new CreatureAction.AdjustHue(),
+	private static final double ACCELERATION_ENERGY = 0.18f;
+	private static final double ACCELERATION_BACK_ENERGY = 0.24f;
+	private static final double SWIM_ENERGY = 0.008f;
+	private static final double TURN_ENERGY = 0.06f;
+	private static final double EAT_ENERGY = 0.05f;
+	// 1 is instant, 0 is nonexistent, 0.001 is verrry slow.
+	private static final double EAT_SPEED = 0.5f;
+	private static final double FIGHT_ENERGY = 0.06f;
+	private static final double INJURED_ENERGY = 0.25f;
+	private static final double METABOLISM_ENERGY = 0.004f;
+	private static final double AGE_FACTOR = 1; // 0 no ageing
+	private static final int ENERGY_HISTORY_LENGTH = 6;
+	// The bigger this number is, the less effiently creatures eat when they're
+	// moving.
+	private static final double EAT_WHILE_MOVING_INEFFICIENCY_MULTIPLIER = 2.0f;
+	private static final double FOOD_SENSITIVITY = 0.3f;
+	private static final float BRIGHTNESS_THRESHOLD = 0.7f;
+	private static final float CROSS_SIZE = 0.022f;
+	private static final List<CreatureAction> CREATURE_ACTIONS = Arrays.asList(new CreatureAction.AdjustHue(),
 			new CreatureAction.Accelerate(), new CreatureAction.Rotate(), new CreatureAction.Eat(),
 			new CreatureAction.Fight(), new CreatureAction.Reproduce(), new CreatureAction.None(),
 			new CreatureAction.None(), new CreatureAction.None(), new CreatureAction.None(),
 			new CreatureAction.AdjustMouthHue());
 
+	static final double SAFE_SIZE = 1.25f;
+	static final double MATURE_AGE = 0.01f;
+
+	private final EvolvioColor evolvioColor;
+	private final double[] previousEnergy = new double[ENERGY_HISTORY_LENGTH];
+	// Vision or View or Preference
+	private final double[] visionAngles = { 0, -0.4f, 0.4f };
+	private final double[] visionDistances = { 0, 0.7f, 0.7f };
+	// double visionAngle;
+	// double visionDistance;
+	private final double[] visionOccludedX = new double[visionAngles.length];
+	private final double[] visionOccludedY = new double[visionAngles.length];
+	private final double visionResults[] = new double[9];
+
+	private double vr;
+
+	// Family
+	final String name;
+	final String parents;
+	final int gen;
+	final int id;
+	final Brain brain;
+
+	// Misc or Unsorted
+	float preferredRank = 8;
+	double mouthHue;
+	double rotation;
+
 	public Creature(EvolvioColor evolvioColor, Board tb) {
 		this(evolvioColor, evolvioColor.random(0, tb.boardWidth), evolvioColor.random(0, tb.boardHeight), 0, 0,
-				evolvioColor.random(tb.MIN_CREATURE_ENERGY, tb.MAX_CREATURE_ENERGY), 1, evolvioColor.random(0, 1), 1, 1,
-				tb, evolvioColor.random(0, 2 * EvolvioColor.PI), 0, "", "[PRIMORDIAL]", true, null, 1,
+				evolvioColor.random(Board.MIN_CREATURE_ENERGY, Board.MAX_CREATURE_ENERGY), 1, evolvioColor.random(0, 1),
+				1, 1, tb, evolvioColor.random(0, 2 * EvolvioColor.PI), 0, "", "[PRIMORDIAL]", true, null, 1,
 				evolvioColor.random(0, 1));
 	}
 
@@ -83,7 +72,6 @@ class Creature extends SoftBody {
 			String tname, String tparents, boolean mutateName, Brain brain, int tgen, double tmouthHue) {
 
 		super(evolvioColor, tpx, tpy, tvx, tvy, tenergy, tdensity, thue, tsaturation, tbrightness, tb);
-		nameGenerator = new NameGenerator(evolvioColor);
 		this.evolvioColor = evolvioColor;
 
 		if (brain == null)
@@ -94,16 +82,7 @@ class Creature extends SoftBody {
 		vr = tvr;
 		isCreature = true;
 		id = board.creatureIDUpTo + 1;
-		if (tname.length() >= 1) {
-			if (mutateName) {
-				name = nameGenerator.mutateName(tname);
-			} else {
-				name = tname;
-			}
-			name = nameGenerator.sanitizeName(name);
-		} else {
-			name = nameGenerator.newName();
-		}
+		name = createName(tname, mutateName);
 		parents = tparents;
 		board.creatureIDUpTo++;
 		// visionAngle = 0;
@@ -115,6 +94,22 @@ class Creature extends SoftBody {
 		}
 		gen = tgen;
 		mouthHue = tmouthHue;
+	}
+
+	private String createName(String tname, boolean mutateName) {
+		NameGenerator nameGenerator = new NameGenerator(evolvioColor);
+		String name;
+		if (tname.length() >= 1) {
+			if (mutateName) {
+				name = nameGenerator.mutateName(tname);
+			} else {
+				name = tname;
+			}
+			name = nameGenerator.sanitizeName(name);
+		} else {
+			name = nameGenerator.newName();
+		}
+		return name;
 	}
 
 	public void drawBrain(PFont font, float scaleUp, int mX, int mY) {
@@ -133,7 +128,7 @@ class Creature extends SoftBody {
 		if (useOutput) {
 			double[] output = brain.outputs();
 			for (int i = 0; i < output.length; i++) {
-				CreatureActions.get(i).doAction(this, output[i], timeStep);
+				CREATURE_ACTIONS.get(i).doAction(this, output[i], timeStep);
 			}
 		}
 	}
@@ -150,7 +145,7 @@ class Creature extends SoftBody {
 			this.evolvioColor.ellipse((float) (px * scaleUp), (float) (py * scaleUp),
 					(float) (FIGHT_RANGE * radius * scaleUp), (float) (FIGHT_RANGE * radius * scaleUp));
 		}
-		this.evolvioColor.strokeWeight(board.CREATURE_STROKE_WEIGHT);
+		this.evolvioColor.strokeWeight(Board.CREATURE_STROKE_WEIGHT);
 		this.evolvioColor.stroke(0, 0, 1);
 		this.evolvioColor.fill(0, 0, 1);
 		if (this == board.selectedCreature) {
@@ -178,7 +173,7 @@ class Creature extends SoftBody {
 				visionUIcolor = this.evolvioColor.color(0, 0, 0);
 			}
 			this.evolvioColor.stroke(visionUIcolor);
-			this.evolvioColor.strokeWeight(board.CREATURE_STROKE_WEIGHT);
+			this.evolvioColor.strokeWeight(Board.CREATURE_STROKE_WEIGHT);
 			float endX = (float) getVisionEndX(i);
 			float endY = (float) getVisionEndY(i);
 			this.evolvioColor.line((float) (px * scaleUp), (float) (py * scaleUp), endX * scaleUp, endY * scaleUp);
@@ -188,7 +183,7 @@ class Creature extends SoftBody {
 					2 * CROSS_SIZE * scaleUp, 2 * CROSS_SIZE * scaleUp);
 			this.evolvioColor.stroke((float) (visionResults[i * 3]), (float) (visionResults[i * 3 + 1]),
 					(float) (visionResults[i * 3 + 2]));
-			this.evolvioColor.strokeWeight(board.CREATURE_STROKE_WEIGHT);
+			this.evolvioColor.strokeWeight(Board.CREATURE_STROKE_WEIGHT);
 			this.evolvioColor.line((float) ((visionOccludedX[i] - CROSS_SIZE) * scaleUp),
 					(float) ((visionOccludedY[i] - CROSS_SIZE) * scaleUp),
 					(float) ((visionOccludedX[i] + CROSS_SIZE) * scaleUp),
@@ -202,16 +197,16 @@ class Creature extends SoftBody {
 
 	public void drawMouth(Board board, float scaleUp, double radius, double rotation, float camZoom, double mouthHue) {
 		this.evolvioColor.noFill();
-		this.evolvioColor.strokeWeight(board.CREATURE_STROKE_WEIGHT);
+		this.evolvioColor.strokeWeight(Board.CREATURE_STROKE_WEIGHT);
 		this.evolvioColor.stroke(0, 0, 1);
 		this.evolvioColor.ellipseMode(EvolvioColor.RADIUS);
 		this.evolvioColor.ellipse((float) (px * scaleUp), (float) (py * scaleUp),
-				board.MINIMUM_SURVIVABLE_SIZE * scaleUp, board.MINIMUM_SURVIVABLE_SIZE * scaleUp);
+				Board.MINIMUM_SURVIVABLE_SIZE * scaleUp, Board.MINIMUM_SURVIVABLE_SIZE * scaleUp);
 		this.evolvioColor.pushMatrix();
 		this.evolvioColor.translate((float) (px * scaleUp), (float) (py * scaleUp));
 		this.evolvioColor.scale((float) radius);
 		this.evolvioColor.rotate((float) rotation);
-		this.evolvioColor.strokeWeight((float) (board.CREATURE_STROKE_WEIGHT / radius));
+		this.evolvioColor.strokeWeight((float) (Board.CREATURE_STROKE_WEIGHT / radius));
 		this.evolvioColor.stroke(0, 0, 0);
 		this.evolvioColor.fill((float) mouthHue, 1.0f, 1.0f);
 		this.evolvioColor.ellipse(0.6f * scaleUp, 0, 0.37f * scaleUp, 0.37f * scaleUp);
@@ -395,7 +390,7 @@ class Creature extends SoftBody {
 		if (x >= 0 && x < board.boardWidth && y >= 0 && y < board.boardHeight) {
 			return board.tiles[(int) (x)][(int) (y)].getColor();
 		} else {
-			return board.BACKGROUND_COLOR;
+			return board.backgroundColor;
 		}
 	}
 
@@ -406,7 +401,7 @@ class Creature extends SoftBody {
 	public void addPVOs(int x, int y, ArrayList<SoftBody> PVOs) {
 		if (x >= 0 && x < board.boardWidth && y >= 0 && y < board.boardHeight) {
 			for (int i = 0; i < board.softBodiesInPositions[x][y].size(); i++) {
-				SoftBody newCollider = (SoftBody) board.softBodiesInPositions[x][y].get(i);
+				SoftBody newCollider = board.softBodiesInPositions[x][y].get(i);
 				if (!PVOs.contains(newCollider) && newCollider != this) {
 					PVOs.add(newCollider);
 				}
@@ -416,7 +411,6 @@ class Creature extends SoftBody {
 
 	public void returnToEarth() {
 		int pieces = 20;
-		double radius = (float) getRadius();
 		for (int i = 0; i < pieces; i++) {
 			getRandomCoveredTile().addFood(energy / pieces, hue, true);
 		}

@@ -3,38 +3,39 @@ package evolv.io;
 import java.util.ArrayList;
 
 class SoftBody {
-	/**
-	 * 
-	 */
+	private static final float COLLISION_FORCE = 0.01f;
+
+	static final float FRICTION = 0.004f;
+	static final float FIGHT_RANGE = 2.0f;
+
 	private final EvolvioColor evolvioColor;
+	// Set so when a creature is of minimum size, it equals one.
+	private final float ENERGY_DENSITY;
+
+	final double density;
+	final double birthTime;
+	final Board board;
+
+	private int prevSBIPMinX;
+	private int prevSBIPMinY;
+	private int prevSBIPMaxX;
+	private int prevSBIPMaxY;
+
 	double px;
 	double py;
 	double vx;
 	double vy;
 	double energy;
-	float ENERGY_DENSITY; // Set so when a creature is of minimum size, it
-							// equals one.
-	double density;
 	double hue;
 	double saturation;
 	double brightness;
-	double birthTime;
-	boolean isCreature = false;
-	final float FRICTION = 0.004f;
-	final float COLLISION_FORCE = 0.01f;
-	final float FIGHT_RANGE = 2.0f;
-	double fightLevel = 0;
-
-	int prevSBIPMinX;
-	int prevSBIPMinY;
-	int prevSBIPMaxX;
-	int prevSBIPMaxY;
+	boolean isCreature;
+	double fightLevel;
 	int SBIPMinX;
 	int SBIPMinY;
 	int SBIPMaxX;
 	int SBIPMaxY;
 	ArrayList<SoftBody> colliders;
-	Board board;
 
 	public SoftBody(EvolvioColor evolvioColor, double tpx, double tpy, double tvx, double tvy, double tenergy,
 			double tdensity, double thue, double tsaturation, double tbrightness, Board tb) {
@@ -52,7 +53,7 @@ class SoftBody {
 		setSBIP(false);
 		setSBIP(false); // Just to set previous SBIPs as well.
 		birthTime = tb.year;
-		ENERGY_DENSITY = 1.0f / (tb.MINIMUM_SURVIVABLE_SIZE * tb.MINIMUM_SURVIVABLE_SIZE * EvolvioColor.PI);
+		ENERGY_DENSITY = 1.0f / (Board.MINIMUM_SURVIVABLE_SIZE * Board.MINIMUM_SURVIVABLE_SIZE * EvolvioColor.PI);
 	}
 
 	public void setSBIP(boolean shouldRemove) {
@@ -109,7 +110,7 @@ class SoftBody {
 		for (int x = SBIPMinX; x <= SBIPMaxX; x++) {
 			for (int y = SBIPMinY; y <= SBIPMaxY; y++) {
 				for (int i = 0; i < board.softBodiesInPositions[x][y].size(); i++) {
-					SoftBody newCollider = (SoftBody) board.softBodiesInPositions[x][y].get(i);
+					SoftBody newCollider = board.softBodiesInPositions[x][y].get(i);
 					if (!colliders.contains(newCollider) && newCollider != this) {
 						colliders.add(newCollider);
 					}
@@ -140,7 +141,7 @@ class SoftBody {
 	public void drawSoftBody(float scaleUp) {
 		double radius = getRadius();
 		this.evolvioColor.stroke(0);
-		this.evolvioColor.strokeWeight(board.CREATURE_STROKE_WEIGHT);
+		this.evolvioColor.strokeWeight(Board.CREATURE_STROKE_WEIGHT);
 		this.evolvioColor.fill((float) hue, (float) saturation, (float) brightness);
 		this.evolvioColor.ellipseMode(EvolvioColor.RADIUS);
 		this.evolvioColor.ellipse((float) (px * scaleUp), (float) (py * scaleUp), (float) (radius * scaleUp),
